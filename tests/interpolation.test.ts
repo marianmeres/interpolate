@@ -11,10 +11,14 @@ Deno.test("unbraced", () => {
 		interpolate("foo \n$FOO\n baz", { FOO: "bar" }),
 		"foo \nbar\n baz"
 	);
+
+	// if not found returns itself
+	assertEquals(interpolate("foo $FOO baz", {}), "foo $FOO baz");
 });
 
 Deno.test("braced direct", () => {
 	assertEquals(interpolate("foo ${FOO} baz", { FOO: "bar" }), "foo bar baz");
+	assertEquals(interpolate("foo ${FOO} baz", {}), "foo  baz");
 });
 
 Deno.test("default if unset or empty", () => {

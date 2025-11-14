@@ -4,7 +4,7 @@
  *
  * @example
  * ```ts
- * interpolate("Hello, ${name:-World}"); // Hello, World!
+ * interpolate("Hello, ${name:-World}", {}); // Hello, World!
  * interpolate("Hello, ${name:-World}", { name: "Foo" }); // Hello, Foo!
  * ```
  */
@@ -23,22 +23,19 @@ export function interpolate(
 			// Trying to mimic interpolation syntax defined here:
 			// https://docs.docker.com/reference/compose-file/interpolation/
 
-			// DEFAULT VALUE
-			// ${VAR:-default} - use default if unset or empty
+			// ${VAR:-default}
+			// ${VAR-default}
 			const colonDashMatch = braced.match(/^([^:?-]+):-(.*)$/);
-			// ${VAR-default} - use default only if unset
 			const dashMatch = braced.match(/^([^:?-]+)-(.*)$/);
 
-			// REQUIRED VALUE${VAR:?error}
-			// ${VAR:?error} - error if unset or empty
+			// ${VAR:?error}
+			// ${VAR:?error}
 			const colonQuestMatch = braced.match(/^([^:?-]+):\?(.*)$/);
-			// ${VAR?error} - error only if unset
 			const questMatch = braced.match(/^([^:?-]+)\?(.*)$/);
 
-			// ALTERNATIVE VALUE
-			// ${VAR:+replacement} -> replacement if unset or empty
+			// ${VAR:+replacement}
+			// ${VAR+replacement}
 			const colonPlusMatch = braced.match(/^([^:?-]+):\+(.*)$/);
-			// ${VAR+replacement} -> replacement only if unset
 			const plusMatch = braced.match(/^([^:?-]+)\+(.*)$/);
 
 			let varName, defaultValue, errorMessage, replaceValue;
@@ -104,7 +101,7 @@ export function interpolate(
 				return value;
 			}
 
-			// Simple substitution - return value or empty string if unset
+			// simple case - return value or empty string if unset
 			return value ?? "";
 		}
 	);
