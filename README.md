@@ -1,10 +1,11 @@
 # @marianmeres/interpolate
 
-Simple helper function which interpolates string placeholders, so that "Hello, ${name:-World}!" works as expected.
+Simple helper function which interpolates string placeholders, so that 
+`"Hello, ${name:-World}!"` works as expected.
 
-Inspired by [docker compose interpolation](https://docs.docker.com/reference/compose-file/interpolation/) syntax.
+Roughly inspired by [docker compose interpolation](https://docs.docker.com/reference/compose-file/interpolation/) syntax.
 
-The context (source data to interpolate from) is provided as a parameter (the lib doesn't care whether it's ENV or any other object).
+The context (source data to interpolate from) is provided as a parameter (the lib doesn't care whether it's ENV or anything else).
 
 ## Supported syntax
 
@@ -14,8 +15,8 @@ The context (source data to interpolate from) is provided as a parameter (the li
 | ${VAR}              | Basic bracketed notation          |
 | ${VAR:-default}     | Use default if unset or empty     |
 | ${VAR-default}      | Use default only if unset         |
-| ${VAR:?error}       | Throw error if unset or empty     |
-| ${VAR?error}        | Throw error only if unset         |
+| ${VAR:?error}       | Throws error if unset or empty    |
+| ${VAR?error}        | Throws error only if unset        |
 | ${VAR:+replacement} | Use replacement if unset or empty |
 | ${VAR+replacement}  | Use replacement only if unset     |
 
