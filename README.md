@@ -9,16 +9,16 @@ The context (source data to interpolate from) is provided as a parameter (the li
 
 ## Supported syntax
 
-| Syntax              | Note                              |
-| ------------------- | --------------------------------- |
-| $VAR                | Basic unbracketed notation        |
-| ${VAR}              | Basic bracketed notation          |
-| ${VAR:-default}     | Use default if unset or empty     |
-| ${VAR-default}      | Use default only if unset         |
-| ${VAR:?error}       | Throws error if unset or empty    |
-| ${VAR?error}        | Throws error only if unset        |
-| ${VAR:+replacement} | Use replacement if unset or empty |
-| ${VAR+replacement}  | Use replacement only if unset     |
+| Syntax              | Note                                |
+| ------------------- | ----------------------------------- |
+| $VAR                | Basic unbracketed notation          |
+| ${VAR}              | Basic bracketed notation            |
+| ${VAR:-default}     | Use "default" if unset or empty     |
+| ${VAR-default}      | Use "default" only if unset         |
+| ${VAR:?error}       | Throws error if unset or empty      |
+| ${VAR?error}        | Throws error only if unset          |
+| ${VAR:+replacement} | Use "replacement" if unset or empty |
+| ${VAR+replacement}  | Use "replacement" only if unset     |
 
 ## Install
 ```sh
@@ -32,7 +32,9 @@ npm install @marianmeres/interpolate
 
 ```typescript
 import { interpolate } from '@marianmeres/interpolate';
+```
 
+```typescript
 interpolate("Hello, ${name:-World}"); // Hello, World!
 interpolate("Hello, ${name:-World}", { name: "Foo" }); // Hello, Foo!
 ```
