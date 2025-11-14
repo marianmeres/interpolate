@@ -40,8 +40,12 @@ function interpolate(str: string, context: Record<string, string>): string
 ```
 
 ```typescript
-interpolate("Hello, ${name:-World}", {}); // Hello, World!
-interpolate("Hello, ${name:-World}", { name: "Foo" }); // Hello, Foo!
+// Hello, World!
+interpolate("Hello, ${name:-World}", {}); 
 
-interpolate("Important ${name:?error}", {}); // throws as "name" does not exits in context
+// Hello, Foo!
+interpolate("Hello, ${name:-World}", { name: "Foo" }); 
+
+// throws as "name" does not exits in context
+interpolate("Hello, ${name:?error}", {});
 ```
