@@ -3,12 +3,14 @@
 Simple helper function which interpolates string variable name placeholders, so that 
 `"Hello, ${NAME:-World}!"` works as expected.
 
-Inspired by [docker compose interpolation](https://docs.docker.com/reference/compose-file/interpolation/) 
-syntax, with minor extension (read NOTE below). The nested notation is not supported.
+Inspired by [docker compose interpolation syntax](https://docs.docker.com/reference/compose-file/interpolation/), 
+with minor extension (read NOTE below). The nested notation is not supported.
 
 The context (source data to interpolate from) is provided as a parameter.
 
 ## Supported syntax
+
+The _unset_ below means `undefined` and _empty_ means empty string.
 
 | Syntax                | Description                                                    |
 | --------------------- | -------------------------------------------------------------- |
