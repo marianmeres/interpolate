@@ -3,8 +3,8 @@
 Simple helper function which interpolates string variable name placeholders, so that 
 `"Hello, ${NAME:-World}!"` works as expected.
 
-Initially inspired by [docker compose interpolation](https://docs.docker.com/reference/compose-file/interpolation/) syntax.
-The assertion syntax is extended to support "!" as well (along with the original "?").
+Inspired by [docker compose interpolation](https://docs.docker.com/reference/compose-file/interpolation/) 
+syntax, with minor extension (read NOTE below). The nested notation is not supported.
 
 The context (source data to interpolate from) is provided as a parameter.
 
@@ -16,14 +16,14 @@ The context (source data to interpolate from) is provided as a parameter.
 | ${VAR}                | Basic bracketed direct substitution                            |
 | ${VAR:-default}       | Use "default" if VAR is unset or empty                         |
 | ${VAR-default}        | Use "default" only if VAR is unset                             |
-| ${VAR:?error message} | Throws "error message" if VAR is unset or empty *              |
-| ${VAR?error message}  | Throws "error message" only if VAR is unset *                  |
-| ${VAR:?}              | Throws error if VAR is unset or empty *                        |
-| ${VAR?}               | Throws error only if VAR is unset *                            |
+| ${VAR:?error message} | Throws "error message" if VAR is unset or empty (read NOTE)    |
+| ${VAR?error message}  | Throws "error message" only if VAR is unset (read NOTE)        |
+| ${VAR:?}              | Throws error if VAR is unset or empty (read NOTE)              |
+| ${VAR?}               | Throws error only if VAR is unset (read NOTE)                  |
 | ${VAR:+replacement}   | Use "replacement" if VAR is set and non-empty, otherwise empty |
 | ${VAR+replacement}    | Use "replacement" if VAR is set, otherwise empty               |
 
-* - for the assertion syntax the "!" is supported as well
+**NOTE:** for the assertion syntax both "?" and "!" are supported
 
 ## Install
 ```sh
