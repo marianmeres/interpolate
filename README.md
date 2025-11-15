@@ -10,8 +10,6 @@ The context (source data to interpolate from) is provided as a parameter.
 
 ## Supported syntax
 
-| Syntax                | Note                                                           |
-| --------------------- | -------------------------------------------------------------- |
 | $VAR                  | Basic unbracketed direct substitution                          |
 | ${VAR}                | Basic bracketed direct substitution                            |
 | ${VAR:-default}       | Use "default" if VAR is unset or empty                         |
