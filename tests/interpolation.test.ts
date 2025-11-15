@@ -32,8 +32,12 @@ Deno.test("default only if unset", () => {
 });
 
 Deno.test("error if unset or empty", () => {
-	assertThrows(() => interpolate("foo ${FOO:?error} baz", {}));
-	assertThrows(() => interpolate("foo ${FOO:?error} baz", { FOO: "" }));
+	assertThrows(() => interpolate("foo ${FOO:?msg} baz", {}), Error, "msg");
+	assertThrows(
+		() => interpolate("foo ${FOO:?msg} baz", { FOO: "" }),
+		Error,
+		"msg"
+	);
 	// does not throw
 	assertEquals(
 		interpolate("foo ${FOO:?error} baz", { FOO: "bar" }),
@@ -42,7 +46,7 @@ Deno.test("error if unset or empty", () => {
 });
 
 Deno.test("error only if unset", () => {
-	assertThrows(() => interpolate("foo ${FOO?error} baz", {}));
+	assertThrows(() => interpolate("foo ${FOO?msg} baz", {}), Error, "msg");
 	// does not throw
 	assertEquals(interpolate("foo ${FOO?error} baz", { FOO: "" }), "foo  baz");
 	assertEquals(

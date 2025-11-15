@@ -9,16 +9,16 @@ The context (source data to interpolate from) is provided as a parameter.
 
 ## Supported syntax
 
-| Syntax              | Note                                                           |
-| ------------------- | -------------------------------------------------------------- |
-| $VAR                | Basic unbracketed notation                                     |
-| ${VAR}              | Basic bracketed notation                                       |
-| ${VAR:-default}     | Use "default" if unset or empty                                |
-| ${VAR-default}      | Use "default" only if unset                                    |
-| ${VAR:?error}       | Throws error if unset or empty                                 |
-| ${VAR?error}        | Throws error only if unset                                     |
-| ${VAR:+replacement} | Use "replacement" if VAR is set and non-empty, otherwise empty |
-| ${VAR+replacement}  | Use "replacement" if VAR is set, otherwise empty               |
+| Syntax                | Note                                                           |
+| --------------------- | -------------------------------------------------------------- |
+| $VAR                  | Basic unbracketed notation                                     |
+| ${VAR}                | Basic bracketed notation                                       |
+| ${VAR:-default}       | Use "default" if VAR is unset or empty                         |
+| ${VAR-default}        | Use "default" only if VAR is unset                             |
+| ${VAR:?error message} | Throws "error message" if VAR is unset or empty                |
+| ${VAR?error message}  | Throws "error message" only if VAR is unset                    |
+| ${VAR:+replacement}   | Use "replacement" if VAR is set and non-empty, otherwise empty |
+| ${VAR+replacement}    | Use "replacement" if VAR is set, otherwise empty               |
 
 ## Install
 ```sh
@@ -45,7 +45,5 @@ interpolate("Hello, ${NAME:-World}", {});
 
 // Hello, Foo!
 interpolate("Hello, ${NAME:-World}", { NAME: "Foo" }); 
-
-// throws as "NAME" does not exits in context
-interpolate("Hello, ${NAME:?error}", {});
+interpolate("Hello, ${NAME}", { NAME: "Foo" }); 
 ```
