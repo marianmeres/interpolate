@@ -45,5 +45,5 @@ interpolate("Hello, ${NAME:-World}", {});
 
 // Hello, Foo!
 interpolate("Hello, ${NAME:-World}", { NAME: "Foo" }); 
-interpolate("Hello, ${NAME}", { NAME: "Foo" }); 
+interpolate("Hello, $NAME", { NAME: "Foo" }); 
 ```
