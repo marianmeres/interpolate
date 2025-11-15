@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import { interpolate } from "../src/interpolate.ts";
 
 Deno.test("no placeholders", () => {
@@ -51,24 +51,34 @@ Deno.test("error only if unset", () => {
 	);
 });
 
-Deno.test("replacement if unset or empty", () => {
-	assertEquals(interpolate("foo ${FOO:+replace} baz", {}), "foo replace baz");
-	assertEquals(
-		interpolate("foo ${FOO:+replace} baz", { FOO: "" }),
-		"foo replace baz"
-	);
-	// does not throw
+Deno.test("replacement if is set and non-empty", () => {
+	// ${VAR:+replacement} -> replacement if VAR is set and non-empty, otherwise empty
+
+	// is set non-empty -> replacement
 	assertEquals(
 		interpolate("foo ${FOO:+replace} baz", { FOO: "bar" }),
-		"foo bar baz"
+		"foo replace baz"
 	);
+
+	// is set empty -> empty
+	assertEquals(interpolate("foo ${FOO:+replace} baz", { FOO: "" }), "foo  baz");
+	// is unset -> empty
+	assertEquals(interpolate("foo ${FOO:+replace} baz", {}), "foo  baz");
 });
 
-Deno.test("replacement only if unset", () => {
-	assertEquals(interpolate("foo ${FOO+replace} baz", {}), "foo replace baz");
-	assertEquals(interpolate("foo ${FOO+replace} baz", { FOO: "" }), "foo  baz");
+Deno.test("replacement if is set", () => {
+	// ${VAR+replacement} -> replacement if VAR is set, otherwise empty
+
+	// is set -> replacement
 	assertEquals(
 		interpolate("foo ${FOO+replace} baz", { FOO: "bar" }),
-		"foo bar baz"
+		"foo replace baz"
 	);
+	// is set empty -> replacement
+	assertEquals(
+		interpolate("foo ${FOO+replace} baz", { FOO: "" }),
+		"foo replace baz"
+	);
+	// is unset -> empty
+	assertEquals(interpolate("foo ${FOO+replace} baz", {}), "foo  baz");
 });

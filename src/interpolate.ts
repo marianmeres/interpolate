@@ -1,11 +1,11 @@
 /**
  * Simple helper function which interpolates string placeholders, so that
- * "Hello, ${name:-World}!" works as expected.
+ * "Hello, ${NAME:-World}!" works as expected.
  *
  * @example
  * ```ts
- * interpolate("Hello, ${name:-World}", {}); // Hello, World!
- * interpolate("Hello, ${name:-World}", { name: "Foo" }); // Hello, Foo!
+ * interpolate("Hello, ${NAME:-World}", {}); // Hello, World!
+ * interpolate("Hello, ${NAME:-World}", { NAME: "Foo" }); // Hello, Foo!
  * ```
  */
 export function interpolate(
@@ -29,7 +29,7 @@ export function interpolate(
 			const dashMatch = braced.match(/^([^:?-]+)-(.*)$/);
 
 			// ${VAR:?error}
-			// ${VAR:?error}
+			// ${VAR?error}
 			const colonQuestMatch = braced.match(/^([^:?-]+):\?(.*)$/);
 			const questMatch = braced.match(/^([^:?-]+)\?(.*)$/);
 
@@ -59,12 +59,12 @@ export function interpolate(
 			else if (questMatch) {
 				[, varName, errorMessage] = questMatch;
 			}
-			// ${VAR:+replacement} - use replacement if unset or empty
+			// ${VAR:+replacement} -> replacement if VAR is set and non-empty, otherwise empty
 			else if (colonPlusMatch) {
 				[, varName, replaceValue] = colonPlusMatch;
 				requireNonEmpty = true;
 			}
-			// ${VAR+replacement} -> use replacement only if unset
+			// ${VAR+replacement} -> replacement if VAR is set, otherwise empty
 			else if (plusMatch) {
 				[, varName, replaceValue] = plusMatch;
 			}
@@ -93,12 +93,16 @@ export function interpolate(
 				return value;
 			}
 
-			// replace
+			// replacement if VAR is set and non-empty, otherwise empty
+			// replacement if VAR is set, otherwise empty
 			if (replaceValue !== undefined) {
-				if (isUnset || (requireNonEmpty && isEmpty)) {
+				if (isUnset) return "";
+
+				if (!requireNonEmpty || (requireNonEmpty && !isEmpty)) {
 					return replaceValue;
 				}
-				return value;
+
+				return "";
 			}
 
 			// simple case - return value or empty string if unset
