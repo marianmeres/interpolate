@@ -25,18 +25,20 @@ export function interpolate(
 
 			// ${VAR:-default}
 			// ${VAR-default}
-			const colonDashMatch = braced.match(/^([^:?-]+):-(.*)$/);
-			const dashMatch = braced.match(/^([^:?-]+)-(.*)$/);
+			const colonDashMatch = braced.match(/^([^:?!-]+):-(.*)$/);
+			const dashMatch = braced.match(/^([^:?!-]+)-(.*)$/);
 
 			// ${VAR:?error}
 			// ${VAR?error}
-			const colonQuestMatch = braced.match(/^([^:?-]+):\?(.*)$/);
-			const questMatch = braced.match(/^([^:?-]+)\?(.*)$/);
+			// ${VAR:!error}
+			// ${VAR!error}
+			const colonQuestMatch = braced.match(/^([^:?!-]+):[\!\?](.*)$/);
+			const questMatch = braced.match(/^([^:?!-]+)[\!\?](.*)$/);
 
 			// ${VAR:+replacement}
 			// ${VAR+replacement}
-			const colonPlusMatch = braced.match(/^([^:?-]+):\+(.*)$/);
-			const plusMatch = braced.match(/^([^:?-]+)\+(.*)$/);
+			const colonPlusMatch = braced.match(/^([^:?!-]+):\+(.*)$/);
+			const plusMatch = braced.match(/^([^:?!-]+)\+(.*)$/);
 
 			let varName, defaultValue, errorMessage, replaceValue;
 			let requireNonEmpty = false;
@@ -80,7 +82,7 @@ export function interpolate(
 			// error
 			if (errorMessage !== undefined) {
 				if (isUnset || (requireNonEmpty && isEmpty)) {
-					throw new Error(errorMessage || `${varName} is required but not set`);
+					throw new Error(errorMessage || `${varName} is not set`);
 				}
 				return value;
 			}
