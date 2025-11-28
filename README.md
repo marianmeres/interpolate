@@ -12,10 +12,16 @@ The context (source data to interpolate from) is provided as a parameter.
 
 The _unset_ below means `undefined` and _empty_ means empty string.
 
+**IMPORTANT NOTES:**
+- The unbraced syntax `$VAR` only matches uppercase variable names (pattern: `/[A-Z_][A-Z0-9_]*/`).
+  This follows Docker Compose conventions. Use braced syntax `${var}` for lowercase or mixed-case names.
+- Context values must be strings. The function signature is `Record<string, string>`.
+- **Best Practice:** For consistency and clarity, it's recommended to use UPPERCASE names for all variables, even in braced syntax.
+
 | Syntax                | Description                                                    |
 | --------------------- | -------------------------------------------------------------- |
-| $VAR                  | Basic unbracketed direct substitution                          |
-| ${VAR}                | Basic bracketed direct substitution                            |
+| $VAR                  | Basic unbracketed direct substitution (uppercase only)         |
+| ${VAR}                | Basic bracketed direct substitution (any case)                 |
 | ${VAR:-default}       | Use "default" if VAR is unset or empty                         |
 | ${VAR-default}        | Use "default" only if VAR is unset                             |
 | ${VAR:?error message} | Throws "error message" if VAR is unset or empty (read NOTE)    |

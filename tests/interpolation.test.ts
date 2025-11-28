@@ -97,3 +97,125 @@ Deno.test("replacement if is set", () => {
 	// is unset -> empty
 	assertEquals(interpolate("foo ${FOO+replace} baz", {}), "foo  baz");
 });
+
+Deno.test("uppercase only for unbraced variables", () => {
+	// lowercase doesn't match unbraced pattern
+	assertEquals(interpolate("foo $bar baz", { bar: "qux" }), "foo $bar baz");
+	assertEquals(
+		interpolate("foo $camelCase baz", { camelCase: "qux" }),
+		"foo $camelCase baz"
+	);
+
+	// but works with braced syntax
+	assertEquals(interpolate("foo ${bar} baz", { bar: "qux" }), "foo qux baz");
+	assertEquals(
+		interpolate("foo ${camelCase} baz", { camelCase: "qux" }),
+		"foo qux baz"
+	);
+
+	// uppercase works for both
+	assertEquals(interpolate("foo $BAR baz", { BAR: "qux" }), "foo qux baz");
+	assertEquals(interpolate("foo ${BAR} baz", { BAR: "qux" }), "foo qux baz");
+
+	// underscore is allowed
+	assertEquals(
+		interpolate("foo $FOO_BAR baz", { FOO_BAR: "qux" }),
+		"foo qux baz"
+	);
+	assertEquals(
+		interpolate("foo $_FOO baz", { _FOO: "qux" }),
+		"foo qux baz"
+	);
+});
+
+Deno.test("multiple placeholders in one string", () => {
+	// multiple different variables
+	assertEquals(
+		interpolate("${A} ${B} ${C}", { A: "one", B: "two", C: "three" }),
+		"one two three"
+	);
+
+	// same variable multiple times
+	assertEquals(
+		interpolate("${FOO} and ${FOO} again", { FOO: "bar" }),
+		"bar and bar again"
+	);
+
+	// mixed syntax
+	assertEquals(
+		interpolate("$A ${B} $C", { A: "one", B: "two", C: "three" }),
+		"one two three"
+	);
+
+	// complex example with different operators
+	assertEquals(
+		interpolate("${A:-default} ${B:+set} ${C}", {
+			A: "value",
+			B: "val",
+			C: "last",
+		}),
+		"value set last"
+	);
+
+	// adjacent placeholders
+	assertEquals(interpolate("${A}${B}${C}", { A: "1", B: "2", C: "3" }), "123");
+
+	// no spaces - Note: the 'z' at the end is treated as literal text
+	assertEquals(interpolate("x${A}y${B}z", { A: "foo", B: "bar" }), "xfooybarz");
+});
+
+Deno.test("malformed and edge case syntax", () => {
+	// nested braces (not supported - inner ${BAR} gets replaced first)
+	assertEquals(
+		interpolate("foo ${${BAR}} baz", { BAR: "qux", qux: "nested" }),
+		"foo } baz"
+	);
+
+	// incomplete placeholder
+	assertEquals(interpolate("foo ${BAR baz", {}), "foo ${BAR baz");
+	assertEquals(interpolate("foo ${ baz", {}), "foo ${ baz");
+
+	// empty variable name - braces are not matched, treated literally
+	assertEquals(interpolate("foo ${} baz", {}), "foo ${} baz");
+
+	// dollar sign without variable
+	assertEquals(interpolate("foo $ baz", {}), "foo $ baz");
+	assertEquals(interpolate("cost is $5", {}), "cost is $5");
+
+	// special characters in braced names
+	// Note: dash triggers the default operator syntax ${VAR-default}
+	// so "my-var" is interpreted as variable "my" with default "var"
+	assertEquals(
+		interpolate("foo ${my-var} baz", { "my-var": "dash" }),
+		"foo var baz"
+	);
+	// dots work fine
+	assertEquals(
+		interpolate("foo ${my.var} baz", { "my.var": "dot" }),
+		"foo dot baz"
+	);
+
+	// whitespace in variable names (edge case)
+	assertEquals(interpolate("foo ${ BAR } baz", {}), "foo  baz");
+
+	// operators with no default/error message
+	assertEquals(interpolate("${FOO:-}", {}), "");
+	assertEquals(interpolate("${FOO-}", {}), "");
+	assertEquals(interpolate("${FOO:+}", { FOO: "x" }), "");
+});
+
+Deno.test("special characters in values", () => {
+	// special regex characters in values shouldn't break
+	assertEquals(
+		interpolate("${VAR}", { VAR: "$.*+?[]{}()|^\\" }),
+		"$.*+?[]{}()|^\\"
+	);
+
+	// newlines and tabs in values
+	assertEquals(interpolate("${VAR}", { VAR: "line1\nline2" }), "line1\nline2");
+	assertEquals(interpolate("${VAR}", { VAR: "tab\there" }), "tab\there");
+
+	// unicode
+	assertEquals(interpolate("${VAR}", { VAR: "emoji 🎉" }), "emoji 🎉");
+	assertEquals(interpolate("${VAR}", { VAR: "日本語" }), "日本語");
+});
