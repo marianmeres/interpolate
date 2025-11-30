@@ -1,5 +1,8 @@
 # @marianmeres/interpolate
 
+[![NPM version](https://img.shields.io/npm/v/@marianmeres/interpolate.svg)](https://www.npmjs.com/package/@marianmeres/interpolate)
+[![JSR version](https://jsr.io/badges/@marianmeres/interpolate)](https://jsr.io/@marianmeres/interpolate)
+
 Simple helper function which interpolates string variable name placeholders, so that 
 `"Hello, ${NAME:-World}!"` works as expected.
 
@@ -68,3 +71,10 @@ interpolate("Hello, ${NAME:!}", { NAME: "" });
 // throws "custom error message"
 interpolate("Hello, ${NAME:?custom error message}", {});
 ```
+
+## Package Identity
+
+- **Name:** @marianmeres/interpolate
+- **Author:** Marian Meres
+- **Repository:** https://github.com/marianmeres/interpolate
+- **License:** MIT
