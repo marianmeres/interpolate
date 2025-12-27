@@ -2,9 +2,9 @@
 
 [![NPM version](https://img.shields.io/npm/v/@marianmeres/interpolate.svg)](https://www.npmjs.com/package/@marianmeres/interpolate)
 [![JSR version](https://jsr.io/badges/@marianmeres/interpolate)](https://jsr.io/@marianmeres/interpolate)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Simple helper function which interpolates string variable name placeholders, so that 
-`"Hello, ${NAME:-World}!"` works as expected.
+Simple, zero-dependency string interpolation utility with Docker Compose-inspired syntax.
 
 Inspired by [docker compose interpolation syntax](https://docs.docker.com/reference/compose-file/interpolation/), 
 with minor extension (read NOTE below). The nested notation is not supported.
@@ -72,9 +72,7 @@ interpolate("Hello, ${NAME:!}", { NAME: "" });
 interpolate("Hello, ${NAME:?custom error message}", {});
 ```
 
-## Package Identity
+## API Reference
 
-- **Name:** @marianmeres/interpolate
-- **Author:** Marian Meres
-- **Repository:** https://github.com/marianmeres/interpolate
-- **License:** MIT
+For comprehensive API documentation including all syntax variants, detailed examples,
+edge cases, and error handling, see [API.md](./API.md).
