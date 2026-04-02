@@ -1,1 +1,3 @@
-String interpolation utility mimicking Docker Compose syntax. Replaces ${VAR} placeholders with values from a context object, supporting defaults (:-), assertions (:?/:!), and conditional replacements (:+).
+String interpolation utility mimicking Docker Compose syntax. Replaces ${VAR} placeholders 
+with values from a context object, supporting defaults (:-), assertions (:?/:!), and 
+conditional replacements (:+).
