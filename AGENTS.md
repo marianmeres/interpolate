@@ -12,10 +12,13 @@
 ### Function: `interpolate`
 
 ```typescript
-function interpolate(str: string, context: Record<string, string>): string
+function interpolate(
+  str: string,
+  context?: Record<string, string> | null
+): string
 ```
 
-- **Input**: Template string with placeholders, context object with string values
+- **Input**: Template string with placeholders; optional context object with string values
 - **Output**: Interpolated string
 - **Throws**: `Error` when assertion operators (`?` or `!`) fail
 
@@ -23,6 +26,7 @@ function interpolate(str: string, context: Record<string, string>): string
 
 | Pattern | Behavior |
 |---------|----------|
+| `$$` | Literal `$` (escape) |
 | `$VAR` | Substitute if uppercase, else literal |
 | `${VAR}` | Substitute (any case), empty if unset |
 | `${VAR:-default}` | Default if unset OR empty |
@@ -37,8 +41,13 @@ function interpolate(str: string, context: Record<string, string>): string
 - Colon (`:`) modifier = treat empty string as missing
 - Unbraced `$VAR` pattern: `/[A-Z_][A-Z0-9_]*/` (uppercase only)
 - Braced `${var}` works with any case
-- Nested syntax not supported
-- Context values must be strings
+- **Direct key lookup precedence**: if braced content matches a literal key of
+  the context, it resolves to that value before any operator parsing. This
+  allows names containing `-`, `:`, `?`, `!`, `+` to resolve correctly
+  (e.g. `${my-var}` with `{ "my-var": "x" }` → `"x"`).
+- `$$` escapes to a literal `$` and prevents interpolation of the following token
+- Nested syntax not supported; values are not re-interpolated (single pass)
+- Context values must be strings; context itself is optional / nullable
 
 ## File Structure
 

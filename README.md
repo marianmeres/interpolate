@@ -23,6 +23,7 @@ The _unset_ below means `undefined` and _empty_ means empty string.
 
 | Syntax                | Description                                                    |
 | --------------------- | -------------------------------------------------------------- |
+| $$                    | Literal dollar sign (escape)                                   |
 | $VAR                  | Basic unbracketed direct substitution (uppercase only)         |
 | ${VAR}                | Basic bracketed direct substitution (any case)                 |
 | ${VAR:-default}       | Use "default" if VAR is unset or empty                         |
@@ -35,6 +36,13 @@ The _unset_ below means `undefined` and _empty_ means empty string.
 | ${VAR+replacement}    | Use "replacement" if VAR is set, otherwise empty               |
 
 **NOTE:** for the assertion syntax both "?" and "!" are supported
+
+### Names containing operator characters
+
+If the braced content is an exact key of the context, it is resolved directly —
+even when it contains operator characters such as `-`, `:`, `?`, `!`, `+`. This
+means `${my-var}` with `{ "my-var": "value" }` resolves to `"value"`. Operator
+parsing only kicks in when the literal name is not present in the context.
 
 ## Install
 ```sh
@@ -52,7 +60,10 @@ import { interpolate } from '@marianmeres/interpolate';
 
 ```typescript
 // signature:
-function interpolate(str: string, context: Record<string, string>): string
+function interpolate(
+    str: string,
+    context?: Record<string, string> | null
+): string
 ```
 
 ```typescript
@@ -70,9 +81,36 @@ interpolate("Hello, ${NAME:!}", { NAME: "" });
 
 // throws "custom error message"
 interpolate("Hello, ${NAME:?custom error message}", {});
+
+// $$ escapes to a literal dollar sign
+interpolate("Price: $$100", {}); // "Price: $100"
+interpolate("$$NAME", { NAME: "x" }); // "$NAME" (literal, not substituted)
+
+// Context is optional
+interpolate("${NAME:-World}"); // "World"
 ```
 
 ## API Reference
 
 For comprehensive API documentation including all syntax variants, detailed examples,
 edge cases, and error handling, see [API.md](./API.md).
+
+## Behavior changes
+
+The following behaviors changed relative to prior versions. Each is a potential
+source of backwards-incompatibility for callers relying on the old output.
+
+- **`$$` now escapes to a literal `$`.** Previously, `$$` was left untouched
+  (e.g. `$$100` → `"$$100"`). Now `$$100` → `"$100"`, and `$$VAR` no longer
+  substitutes `VAR`. Callers that wrote literal `$$` sequences expecting them
+  to pass through unchanged will see a different output.
+- **Braced content that is a literal key of `context` wins over operator
+  parsing.** Previously, `${my-var}` with `{ "my-var": "X" }` returned `"var"`
+  (the dash was parsed as the `${VAR-default}` operator). Now it returns
+  `"X"`. Operator parsing still applies when the literal key is absent, so
+  the `${FOO-default}` idiom continues to work for unset `FOO`.
+- **`context` is now optional / nullable.** The signature is
+  `interpolate(str, context?: Record<string, string> | null)`. Omitted or
+  nullish context behaves as if every variable were unset. Previously the
+  type required a non-null record but the runtime already handled
+  null/undefined silently — the types now match the runtime.

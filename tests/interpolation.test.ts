@@ -183,12 +183,14 @@ Deno.test("malformed and edge case syntax", () => {
 	assertEquals(interpolate("cost is $5", {}), "cost is $5");
 
 	// special characters in braced names
-	// Note: dash triggers the default operator syntax ${VAR-default}
-	// so "my-var" is interpreted as variable "my" with default "var"
+	// Direct key lookup wins — if the braced content is a literal key of
+	// context, it resolves to that value even when it contains operator chars.
 	assertEquals(
 		interpolate("foo ${my-var} baz", { "my-var": "dash" }),
-		"foo var baz"
+		"foo dash baz"
 	);
+	// When the literal key is NOT present, dash still triggers operator parsing.
+	assertEquals(interpolate("foo ${FOO-fallback} baz", {}), "foo fallback baz");
 	// dots work fine
 	assertEquals(
 		interpolate("foo ${my.var} baz", { "my.var": "dot" }),
@@ -218,4 +220,99 @@ Deno.test("special characters in values", () => {
 	// unicode
 	assertEquals(interpolate("${VAR}", { VAR: "emoji 🎉" }), "emoji 🎉");
 	assertEquals(interpolate("${VAR}", { VAR: "日本語" }), "日本語");
+});
+
+Deno.test("dollar sign escape ($$)", () => {
+	// $$ produces a literal $
+	assertEquals(interpolate("$$100", {}), "$100");
+	assertEquals(interpolate("cost: $$", {}), "cost: $");
+	assertEquals(interpolate("$$$$", {}), "$$");
+
+	// $$ protects an otherwise-interpolatable unbraced name
+	assertEquals(interpolate("$$VAR", { VAR: "x" }), "$VAR");
+
+	// $$ protects an otherwise-interpolatable braced name
+	assertEquals(interpolate("$${VAR}", { VAR: "x" }), "${VAR}");
+
+	// mixed
+	assertEquals(
+		interpolate("$$USD ${AMOUNT}", { AMOUNT: "100" }),
+		"$USD 100"
+	);
+
+	// three $ in a row: first two escape, third interpolates
+	assertEquals(interpolate("$$$VAR", { VAR: "x" }), "$x");
+});
+
+Deno.test("names containing operator characters", () => {
+	// Direct key lookup wins over operator parsing
+	assertEquals(interpolate("${my-var}", { "my-var": "dash-name" }), "dash-name");
+	assertEquals(interpolate("${a:b}", { "a:b": "colon" }), "colon");
+	assertEquals(interpolate("${a+b}", { "a+b": "plus" }), "plus");
+	assertEquals(interpolate("${a?b}", { "a?b": "quest" }), "quest");
+
+	// When the literal key is absent, operator parsing still applies
+	assertEquals(interpolate("${FOO-default}", {}), "default");
+	assertEquals(interpolate("${FOO-default}", { FOO: "set" }), "set");
+});
+
+Deno.test("optional / nullish context", () => {
+	// No context argument -> all variables are unset
+	assertEquals(interpolate("${VAR:-x}"), "x");
+	assertEquals(interpolate("${VAR}"), "");
+	assertEquals(interpolate("$VAR"), "$VAR");
+
+	// Explicit null / undefined behave the same
+	assertEquals(interpolate("${VAR:-x}", null), "x");
+	assertEquals(interpolate("${VAR:-x}", undefined), "x");
+});
+
+Deno.test("values containing replace-pattern specials are not expanded", () => {
+	// String.prototype.replace uses callback mode, so $1 / $& / $$ in
+	// replacement values must not be interpreted specially.
+	assertEquals(interpolate("${A}", { A: "$1$&$$" }), "$1$&$$");
+	assertEquals(interpolate("${A}", { A: "$`$'" }), "$`$'");
+});
+
+Deno.test("values containing placeholder-like text are not re-interpolated", () => {
+	// Substitution happens in a single pass — values are not rescanned.
+	assertEquals(interpolate("${A}", { A: "${B}", B: "y" }), "${B}");
+	assertEquals(interpolate("${A}", { A: "$B", B: "y" }), "$B");
+});
+
+Deno.test("colons and other specials inside default / error / replacement values", () => {
+	// URL-style defaults with embedded colons
+	assertEquals(
+		interpolate("${URL:-http://host:8080/path}", {}),
+		"http://host:8080/path"
+	);
+	// Default values may contain dashes, question marks, plus signs
+	assertEquals(interpolate("${A:-a-b?c+d}", {}), "a-b?c+d");
+	// Error message may contain special characters
+	try {
+		interpolate("${A:?why? please!}", {});
+		throw new Error("should have thrown");
+	} catch (e) {
+		if (!(e instanceof Error) || e.message !== "why? please!") {
+			throw new Error(`unexpected: ${(e as Error).message}`);
+		}
+	}
+});
+
+Deno.test("error operator with empty message uses default text", () => {
+	try {
+		interpolate("${MISSING:?}", {});
+		throw new Error("should have thrown");
+	} catch (e) {
+		if (!(e instanceof Error) || e.message !== "MISSING is not set") {
+			throw new Error(`unexpected: ${(e as Error).message}`);
+		}
+	}
+});
+
+Deno.test("unbraced variable followed by non-word characters", () => {
+	// $VAR terminates at the first non-[A-Z0-9_] character
+	assertEquals(interpolate("$VAR-suffix", { VAR: "v" }), "v-suffix");
+	assertEquals(interpolate("$VAR.ext", { VAR: "v" }), "v.ext");
+	assertEquals(interpolate("$VAR}", { VAR: "v" }), "v}");
 });

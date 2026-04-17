@@ -6,6 +6,7 @@
  * with default values, error assertions, and conditional replacements.
  *
  * **Supported syntax:**
+ * - `$$` - Literal dollar sign (escape)
  * - `$VAR` - Basic unbraced substitution (uppercase names only, pattern: `/[A-Z_][A-Z0-9_]*‍/`)
  * - `${VAR}` - Basic braced substitution (any case)
  * - `${VAR:-default}` - Use "default" if VAR is unset or empty
@@ -15,8 +16,14 @@
  * - `${VAR:+replacement}` - Use "replacement" if VAR is set and non-empty
  * - `${VAR+replacement}` - Use "replacement" if VAR is set (even if empty)
  *
+ * **Variable names with operator characters:**
+ * When the braced content is an exact key of `context`, it is looked up directly.
+ * This lets names that contain `-`, `:`, `?`, `!`, `+` (e.g. `my-var`) resolve
+ * correctly — direct lookup takes precedence over operator parsing.
+ *
  * @param str - The template string containing variable placeholders to interpolate.
- * @param context - A record mapping variable names to their string values.
+ * @param context - A record mapping variable names to their string values. Optional;
+ *   when omitted or nullish, all variables are treated as unset.
  * @returns The interpolated string with all placeholders replaced.
  * @throws {Error} When using assertion syntax (`?` or `!`) and the variable is unset
  *   or empty (depending on whether the colon modifier is used).
@@ -26,6 +33,12 @@
  * interpolate("Hello, ${NAME:-World}!", {}); // "Hello, World!"
  * interpolate("Hello, ${NAME:-World}!", { NAME: "Alice" }); // "Hello, Alice!"
  * interpolate("Hello, $NAME!", { NAME: "Bob" }); // "Hello, Bob!"
+ * ```
+ *
+ * @example Escaping the dollar sign
+ * ```ts
+ * interpolate("Price: $$100", {}); // "Price: $100"
+ * interpolate("$$NAME", { NAME: "x" }); // "$NAME" (literal, not substituted)
  * ```
  *
  * @example Default values
@@ -47,75 +60,74 @@
  * interpolate("${VAR:+is set}", { VAR: "" }); // "" (empty because VAR is empty)
  * interpolate("${VAR+is set}", { VAR: "" }); // "is set" (VAR is set, even if empty)
  * ```
+ *
+ * @example Names containing operator characters
+ * ```ts
+ * interpolate("${my-var}", { "my-var": "value" }); // "value"
+ * ```
  */
 export function interpolate(
 	str: string,
-	context: Record<string, string>
+	context?: Record<string, string> | null
 ): string {
+	const ctx = context ?? {};
+	const hasKey = (k: string) =>
+		Object.prototype.hasOwnProperty.call(ctx, k);
+
 	return str.replace(
-		/\$\{([^}]+)\}|\$([A-Z_][A-Z0-9_]*)/g,
+		/\$\$|\$\{([^}]+)\}|\$([A-Z_][A-Z0-9_]*)/g,
 		(match, braced, unbraced) => {
-			// console.log(match, braced, unbraced);
+			// $$ -> literal $
+			if (match === "$$") return "$";
 
 			// unbraced variables eg $VAR
-			if (unbraced) return context?.[unbraced] ?? match;
+			if (unbraced !== undefined) return hasKey(unbraced) ? ctx[unbraced] : match;
 
-			// Trying to mimic interpolation syntax defined here:
+			// Direct key lookup wins — supports names that contain operator
+			// characters (`-`, `:`, `?`, `!`, `+`) when present literally in context.
+			if (hasKey(braced)) return ctx[braced];
+
+			// Otherwise, parse Docker Compose-inspired operators.
 			// https://docs.docker.com/reference/compose-file/interpolation/
 
-			// ${VAR:-default}
-			// ${VAR-default}
-			const colonDashMatch = braced.match(/^([^:?!-]+):-(.*)$/);
-			const dashMatch = braced.match(/^([^:?!-]+)-(.*)$/);
+			// ${VAR:-default} / ${VAR-default}
+			const colonDashMatch = braced.match(/^([^:?!+\-]+):-(.*)$/);
+			const dashMatch = braced.match(/^([^:?!+\-]+)-(.*)$/);
 
-			// ${VAR:?error}
-			// ${VAR?error}
-			// ${VAR:!error}
-			// ${VAR!error}
-			const colonQuestMatch = braced.match(/^([^:?!-]+):[\!\?](.*)$/);
-			const questMatch = braced.match(/^([^:?!-]+)[\!\?](.*)$/);
+			// ${VAR:?error} / ${VAR?error} / ${VAR:!error} / ${VAR!error}
+			const colonQuestMatch = braced.match(/^([^:?!+\-]+):[!?](.*)$/);
+			const questMatch = braced.match(/^([^:?!+\-]+)[!?](.*)$/);
 
-			// ${VAR:+replacement}
-			// ${VAR+replacement}
-			const colonPlusMatch = braced.match(/^([^:?!-]+):\+(.*)$/);
-			const plusMatch = braced.match(/^([^:?!-]+)\+(.*)$/);
+			// ${VAR:+replacement} / ${VAR+replacement}
+			const colonPlusMatch = braced.match(/^([^:?!+\-]+):\+(.*)$/);
+			const plusMatch = braced.match(/^([^:?!+\-]+)\+(.*)$/);
 
-			let varName, defaultValue, errorMessage, replaceValue;
+			let varName: string;
+			let defaultValue: string | undefined;
+			let errorMessage: string | undefined;
+			let replaceValue: string | undefined;
 			let requireNonEmpty = false;
 
-			// ${VAR:-default} - use default if unset or empty
 			if (colonDashMatch) {
 				[, varName, defaultValue] = colonDashMatch;
 				requireNonEmpty = true;
-			}
-			// ${VAR-default} - use default only if unset
-			else if (dashMatch) {
+			} else if (dashMatch) {
 				[, varName, defaultValue] = dashMatch;
-			}
-			// ${VAR:?error} - error if unset or empty
-			else if (colonQuestMatch) {
+			} else if (colonQuestMatch) {
 				[, varName, errorMessage] = colonQuestMatch;
 				requireNonEmpty = true;
-			}
-			// ${VAR?error} - error only if unset
-			else if (questMatch) {
+			} else if (questMatch) {
 				[, varName, errorMessage] = questMatch;
-			}
-			// ${VAR:+replacement} -> replacement if VAR is set and non-empty, otherwise empty
-			else if (colonPlusMatch) {
+			} else if (colonPlusMatch) {
 				[, varName, replaceValue] = colonPlusMatch;
 				requireNonEmpty = true;
-			}
-			// ${VAR+replacement} -> replacement if VAR is set, otherwise empty
-			else if (plusMatch) {
+			} else if (plusMatch) {
 				[, varName, replaceValue] = plusMatch;
-			}
-			// ${VAR} - simple direct substitution
-			else {
+			} else {
 				varName = braced;
 			}
 
-			const value = context?.[varName];
+			const value = hasKey(varName) ? ctx[varName] : undefined;
 			const isEmpty = value === "";
 			const isUnset = value === undefined;
 
@@ -124,7 +136,7 @@ export function interpolate(
 				if (isUnset || (requireNonEmpty && isEmpty)) {
 					throw new Error(errorMessage || `${varName} is not set`);
 				}
-				return value;
+				return value ?? "";
 			}
 
 			// default
@@ -132,18 +144,14 @@ export function interpolate(
 				if (isUnset || (requireNonEmpty && isEmpty)) {
 					return defaultValue;
 				}
-				return value;
+				return value ?? "";
 			}
 
-			// replacement if VAR is set and non-empty, otherwise empty
-			// replacement if VAR is set, otherwise empty
+			// ${VAR:+replacement} -> replacement if VAR is set and non-empty, else empty
+			// ${VAR+replacement}  -> replacement if VAR is set (even empty), else empty
 			if (replaceValue !== undefined) {
 				if (isUnset) return "";
-
-				if (!requireNonEmpty || (requireNonEmpty && !isEmpty)) {
-					return replaceValue;
-				}
-
+				if (!requireNonEmpty || !isEmpty) return replaceValue;
 				return "";
 			}
 

@@ -7,7 +7,10 @@ Interpolates string placeholders using Docker Compose-inspired syntax.
 ### Signature
 
 ```typescript
-function interpolate(str: string, context: Record<string, string>): string
+function interpolate(
+    str: string,
+    context?: Record<string, string> | null
+): string
 ```
 
 ### Parameters
@@ -15,7 +18,7 @@ function interpolate(str: string, context: Record<string, string>): string
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `str` | `string` | The template string containing variable placeholders to interpolate |
-| `context` | `Record<string, string>` | A record mapping variable names to their string values |
+| `context` | `Record<string, string> \| null \| undefined` | Variable names to their string values. Optional; when omitted or nullish, all variables are treated as unset |
 
 ### Returns
 
@@ -33,10 +36,16 @@ The term *unset* means `undefined` and *empty* means an empty string `""`.
 
 | Syntax | Description | Example |
 |--------|-------------|---------|
+| `$$` | Escaped literal dollar sign | `$$100` → `$100` |
 | `$VAR` | Unbraced substitution (uppercase names only) | `$NAME` matches only `[A-Z_][A-Z0-9_]*` |
 | `${VAR}` | Braced substitution (any case) | `${name}`, `${Name}`, `${NAME}` all work |
 
-**Note:** Unbraced `$VAR` only matches uppercase variable names following the pattern `/[A-Z_][A-Z0-9_]*/`. Use braced `${var}` syntax for lowercase or mixed-case names.
+**Notes:**
+- `$$` is an escape sequence producing a single literal `$`. It also shields
+  the following text from interpolation: `$$VAR` → `$VAR` (literal).
+- Unbraced `$VAR` only matches uppercase variable names following the pattern
+  `/[A-Z_][A-Z0-9_]*/`. Use braced `${var}` syntax for lowercase or mixed-case
+  names.
 
 ### Default Value Operators
 
@@ -182,16 +191,40 @@ interpolate("${${VAR}}", { VAR: "inner", inner: "value" });
 
 ### Variable Name Restrictions
 
-- Unbraced `$VAR` only matches uppercase letters, digits, and underscores starting with a letter or underscore
-- Braced `${var}` works with any characters except `}`, but special characters like `-`, `?`, `!`, `+` trigger operator syntax
+- Unbraced `$VAR` only matches uppercase letters, digits, and underscores starting with a letter or underscore.
+- Braced `${var}` works with any characters except `}`. If the braced content is
+  a literal key of the context, it is looked up directly — otherwise, operator
+  characters `-`, `:`, `?`, `!`, `+` trigger operator syntax.
 
 ```typescript
-// Dash in name triggers default operator syntax
-interpolate("${my-var}", { "my-var": "value" });
-// Returns "var" (interpreted as ${my-default} where default is "var")
+// Direct key lookup wins for names containing operator characters
+interpolate("${my-var}", { "my-var": "value" }); // "value"
+interpolate("${a:b}",   { "a:b":   "value" }); // "value"
 
-// Use dots or other characters instead
+// When the literal key is absent, operator parsing applies
+interpolate("${FOO-default}", {}); // "default"
+
+// Dots, slashes, spaces, unicode are fine as key characters
 interpolate("${my.var}", { "my.var": "value" }); // "value"
+```
+
+### Escaping the Dollar Sign
+
+```typescript
+interpolate("$$100", {});               // "$100"
+interpolate("$$VAR", { VAR: "x" });     // "$VAR" (literal, not interpolated)
+interpolate("$${VAR}", { VAR: "x" });   // "${VAR}" (literal, not interpolated)
+interpolate("$$$VAR", { VAR: "x" });    // "$x"  (first $$ → $, then $VAR → x)
+```
+
+### Values Are Not Re-Interpolated
+
+Substitution is a single pass. Values returned from the context are not
+rescanned for placeholders — this prevents cycles and makes output predictable.
+
+```typescript
+interpolate("${A}", { A: "${B}", B: "y" }); // "${B}"  (B is NOT expanded)
+interpolate("${A}", { A: "$1$&$$" });       // "$1$&$$" (replace-specials preserved)
 ```
 
 ### Incomplete Syntax

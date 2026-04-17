@@ -11,16 +11,19 @@ and conditional replacements (`:+`).
 ## Structure
 
 - `src/mod.ts` - Entry point
-- `src/interpolate.ts` - Implementation (~115 lines)
-- `tests/interpolation.test.ts` - 13 tests
+- `src/interpolate.ts` - Implementation (~135 lines)
+- `tests/interpolation.test.ts` - 21 tests
 
 ## Key Points
 
 - Zero runtime dependencies
 - Dual distribution: JSR (Deno) + npm (Node.js)
 - Colon (`:`) modifier treats empty strings as "unset"
+- `$$` escapes to a literal `$`
 - Unbraced `$VAR` requires UPPERCASE names
-- No nested syntax support
+- Direct context key lookup wins over operator parsing (enables names with `-`, `:`, `?`, `!`, `+`)
+- `context` is optional / nullable — nullish means "everything unset"
+- No nested syntax; values are not re-interpolated (single pass)
 
 ## Commands
 
